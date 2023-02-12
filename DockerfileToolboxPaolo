@@ -1,0 +1,46 @@
+    #
+    # Release Version
+    #
+
+    FROM mcr.microsoft.com/dotnet/sdk:6.0 as build
+    
+    WORKDIR /BUILD
+    
+    COPY Lean Lean
+    COPY Lean.Brokerages.CoinbasePro Lean.Brokerages.CoinbasePro
+    
+    RUN dotnet publish Lean.Brokerages.CoinbasePro/QuantConnect.GDAXBrokerage.ToolBox/QuantConnect.GDAXBrokerage.ToolBox.csproj -c Release -o /output
+
+    #FROM mcr.microsoft.com/dotnet/runtime:6.0-bullseye-slim-amd64
+    FROM mcr.microsoft.com/dotnet/runtime:6.0-bullseye-slim-arm32v7
+    #FROM mcr.microsoft.com/dotnet/runtime:6.0-bullseye-slim-arm64v8
+
+    WORKDIR /
+        
+    ENV DOWNLOADER_PATH=/QuantConnect.GDAXBrokerage.ToolBox
+    ENV SCRIPTS_PATH=$DOWNLOADER_PATH/scripts
+
+    ARG TARGETOS
+    ARG TARGETARCH
+    RUN echo "I'm building for $TARGETOS/$TARGETARCH"
+
+    # RUN apk update
+    # RUN apk add bash
+    RUN apt update
+    RUN apt install -y cron nano
+
+    WORKDIR $DOWNLOADER_PATH
+    # ADD ./QuantConnect.GDAXBrokerage.ToolBox/output .
+    COPY --from=build /output .
+    ADD DockerBuilders/UtilitiesForDockerImage/config.json .
+
+    WORKDIR $DOWNLOADER_PATH/scripts
+    ADD DockerBuilders/UtilitiesForDockerImage/DownloadDataUntilNow.sh .
+    ADD DockerBuilders/UtilitiesForDockerImage/tickers .
+    
+    WORKDIR /
+    # Set Crontab
+    RUN crontab -l | { cat; echo "59 23 * * * bash $SCRIPTS_PATH/DownloadDataUntilNow.sh -p $DOWNLOADER_PATH -t $SCRIPTS_PATH/tickers > DownloadDataUntilNow.log"; } | crontab -
+    #RUN crontab -l | { cat; echo "* * * * * bash $SCRIPTS_PATH/DownloadDataUntilNow.sh -p $DOWNLOADER_PATH -t $SCRIPTS_PATH/tickers > DownloadDataUntilNow.log"; } | crontab -
+    
+    CMD ["cron", "-f" ]
