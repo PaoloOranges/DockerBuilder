@@ -12,8 +12,10 @@
     RUN dotnet publish Lean.Brokerages.CoinbasePro/QuantConnect.GDAXBrokerage.ToolBox/QuantConnect.GDAXBrokerage.ToolBox.csproj -c Release -o /output
 
     #FROM mcr.microsoft.com/dotnet/runtime:6.0-bullseye-slim-amd64
-    FROM mcr.microsoft.com/dotnet/runtime:6.0-bullseye-slim-arm32v7
+    #FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine-amd64
+    #FROM mcr.microsoft.com/dotnet/runtime:6.0-bullseye-slim-arm32v7
     #FROM mcr.microsoft.com/dotnet/runtime:6.0-bullseye-slim-arm64v8
+    FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine-arm32v7
 
     WORKDIR /
         
@@ -24,10 +26,10 @@
     ARG TARGETARCH
     RUN echo "I'm building for $TARGETOS/$TARGETARCH"
 
-    # RUN apk update
-    # RUN apk add bash
-    RUN apt update
-    RUN apt install -y cron nano
+    RUN apk update
+    RUN apk add bash
+    # RUN apt update
+    # RUN apt install -y cron nano
 
     WORKDIR $DOWNLOADER_PATH
     # ADD ./QuantConnect.GDAXBrokerage.ToolBox/output .
@@ -43,4 +45,5 @@
     RUN crontab -l | { cat; echo "59 23 * * * bash $SCRIPTS_PATH/DownloadDataUntilNow.sh -p $DOWNLOADER_PATH -t $SCRIPTS_PATH/tickers > DownloadDataUntilNow.log"; } | crontab -
     #RUN crontab -l | { cat; echo "* * * * * bash $SCRIPTS_PATH/DownloadDataUntilNow.sh -p $DOWNLOADER_PATH -t $SCRIPTS_PATH/tickers > DownloadDataUntilNow.log"; } | crontab -
     
-    CMD ["cron", "-f" ]
+    #CMD ["cron", "-f" ]
+    CMD ["crond", "-f" ]
