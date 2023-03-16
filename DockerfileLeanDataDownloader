@@ -1,0 +1,17 @@
+FROM alpine:3.17
+
+RUN apk update
+RUN apk add bash git
+
+ENV SHARED_STORAGE_HOME=/Shared
+
+WORKDIR /Scripts
+ADD DockerBuilders/UtilitiesForDockerImage/LeanDataDownloader.sh .
+
+WORKDIR /
+
+# Set Crontab
+RUN crontab -l | { cat; echo "00 22 * * * bash /Scripts/LeanDataDownloader.sh > $SHARED_STORAGE_HOME/LeanDataDownloader.log"; } | crontab -
+
+#Alpine
+CMD ["crond", "-f" ] 

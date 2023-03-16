@@ -9,11 +9,13 @@ END_TIME=$(date +%Y%m%d-%H:%M:%S) # now
 TICKERS=
 
 DOWLOADER_PATH=.
-while getopts p:t: flag
+HOME_PATH=.
+while getopts p:t:h: flag
 do
     case "${flag}" in
         p) DOWLOADER_PATH=${OPTARG};;
         t) TICKERS_FILE=${OPTARG};;
+        h) HOME_PATH=${OPTARG};;
     esac
 done
 
@@ -26,6 +28,7 @@ fi
 TICKERS=$(<$TICKERS_FILE)
 # echo $TICKERS
 
+LAST_DOWNLOAD_SUCCESS_TIME_FILE=$HOME_PATH/$LAST_DOWNLOAD_SUCCESS_TIME_FILE
 if [ ! -f $LAST_DOWNLOAD_SUCCESS_TIME_FILE ]
 then
     START_TIME=20210101-00:00:00
@@ -41,8 +44,8 @@ echo $DOWLOADER_PATH
 RESOLUTIONS=("Minute" "Hour" "Daily")
 
 for res in ${RESOLUTIONS[@]}; do
-  echo "Start Downloading for " $res
-  dotnet $DOWLOADER_PATH/QuantConnect.GDAXBrokerage.ToolBox.dll --app=download --tickers=$TICKERS --resolution=$res --from-date=$START_TIME --to-date=$END_TIME
+   echo "Start Downloading for " $res
+   dotnet $DOWLOADER_PATH/QuantConnect.GDAXBrokerage.ToolBox.dll --app=download --tickers=$TICKERS --resolution=$res --from-date=$START_TIME --to-date=$END_TIME
 done
 
 echo $END_TIME > $LAST_DOWNLOAD_SUCCESS_TIME_FILE
