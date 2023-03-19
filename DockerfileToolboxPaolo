@@ -22,6 +22,8 @@
     ENV DOWNLOADER_PATH=/QuantConnect.GDAXBrokerage.ToolBox
     ENV SCRIPTS_PATH=$DOWNLOADER_PATH/scripts
     ENV SHARED_STORAGE_HOME=/Shared
+    ENV ROOT_DIR=/root
+    ENV CONFIG_JSON_PATH=$ROOT_DIR/config.json
 
     ARG TARGETOS
     ARG TARGETARCH
@@ -33,26 +35,25 @@
     # RUN apk add bash
     #Ubuntu/Debian
     RUN apt update
-    RUN apt install -y cron nano
+    RUN apt install -y nano
 
-    WORKDIR $DOWNLOADER_PATH
-    # ADD ./QuantConnect.GDAXBrokerage.ToolBox/output .
+    WORKDIR $DOWNLOADER_PATH    
     COPY --from=build /output .
-    #ADD DockerBuilders/UtilitiesForDockerImage/config.json .
-    RUN echo "{ \"data-folder\": \"..$SHARED_STORAGE_HOME/Data/\" }" > config.json
-
-
+    
     WORKDIR $DOWNLOADER_PATH/scripts
     ADD DockerBuilders/UtilitiesForDockerImage/DownloadDataUntilNow.sh .
     ADD DockerBuilders/UtilitiesForDockerImage/tickers .
-    
-    WORKDIR /
-    # Set Crontab
-    RUN crontab -l | { cat; echo "59 23 * * * bash $SCRIPTS_PATH/DownloadDataUntilNow.sh -p $DOWNLOADER_PATH -t $SCRIPTS_PATH/tickers -h $SHARED_STORAGE_HOME > $SHARED_STORAGE_HOME/DownloadDataUntilNow.log"; } | crontab -
-    #RUN crontab -l | { cat; echo "* * * * * bash $SCRIPTS_PATH/DownloadDataUntilNow.sh -p $DOWNLOADER_PATH -t $SCRIPTS_PATH/tickers -h $SHARED_STORAGE_HOME > $SHARED_STORAGE_HOME/DownloadDataUntilNow.log"; } | crontab -
-    
-    #Ubuntu/Debian
-    CMD ["cron", "-f" ] 
 
-    #Alpine
-    # CMD ["crond", "-f" ] 
+    WORKDIR $ROOT_DIR
+    #ADD DockerBuilders/UtilitiesForDockerImage/config.json .
+    # create config file dynamically
+    RUN echo "{" > $CONFIG_JSON_PATH
+    RUN echo "\"data-folder\": \"$SHARED_STORAGE_HOME/Data/\"," >> $CONFIG_JSON_PATH
+    RUN echo "\"data-directory\": \"$SHARED_STORAGE_HOME/Data/\"" >> $CONFIG_JSON_PATH
+    RUN echo "}" >> $CONFIG_JSON_PATH
+
+    # Set Crontab
+    # RUN crontab -l | { cat; echo "59 23 * * * bash $SCRIPTS_PATH/DownloadDataUntilNow.sh -p $DOWNLOADER_PATH -t $SCRIPTS_PATH/tickers -h $SHARED_STORAGE_HOME > $SHARED_STORAGE_HOME/DownloadDataUntilNow.log"; } | crontab -
+    # RUN crontab -l | { cat; echo "*/5 * * * * bash $SCRIPTS_PATH/DownloadDataUntilNow.sh -p $DOWNLOADER_PATH -t $SCRIPTS_PATH/tickers -h $SHARED_STORAGE_HOME > $SHARED_STORAGE_HOME/DownloadDataUntilNow.log"; } | crontab -
+
+    ENTRYPOINT ["/bin/bash", "-c", "$SCRIPTS_PATH/DownloadDataUntilNow.sh -p $DOWNLOADER_PATH -t $SCRIPTS_PATH/tickers -h $SHARED_STORAGE_HOME > $SHARED_STORAGE_HOME/DownloadDataUntilNow.log"]

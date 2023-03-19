@@ -42,10 +42,18 @@ fi
 echo $DOWLOADER_PATH
 
 RESOLUTIONS=("Minute" "Hour" "Daily")
-
+success=true
 for res in ${RESOLUTIONS[@]}; do
    echo "Start Downloading for " $res
    dotnet $DOWLOADER_PATH/QuantConnect.GDAXBrokerage.ToolBox.dll --app=download --tickers=$TICKERS --resolution=$res --from-date=$START_TIME --to-date=$END_TIME
+   if [$? -ne 0]
+   then
+    success=false
+   fi
 done
 
-echo $END_TIME > $LAST_DOWNLOAD_SUCCESS_TIME_FILE
+echo "Success is $success"
+if ["$success" == true]
+then
+    echo $END_TIME > $LAST_DOWNLOAD_SUCCESS_TIME_FILE
+fi
