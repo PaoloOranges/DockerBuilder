@@ -53,7 +53,6 @@ for res in ${RESOLUTIONS[@]}; do
 done
 
 echo "Success is $success"
-if ["$success" == true]
-then
+if $success; then
     echo $END_TIME > $LAST_DOWNLOAD_SUCCESS_TIME_FILE
 fi
